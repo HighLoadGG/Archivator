@@ -15,45 +15,31 @@ public static class Archiver
     /// </summary>
 
     public static string CompressString(string inputLine)
-    {
-        char? lastC = null;
-        int curCnt = 0;
-        string outputLine = "";
-        foreach (char c in inputLine)
+    { 
+        StringBuilder outputLine = new();
+        int i = 0;
+        int countTotalRepeat = 0;
+        while (i < inputLine.Length)
         {
-            if (lastC == null)
+            char currentChar = inputLine[i];
+            int count = 1;
+            while (i + count < inputLine.Length && inputLine[i + count] == currentChar)
             {
-                lastC = c;
-                curCnt = 1;
-                continue;
+                count++;
+                countTotalRepeat++;
             }
-            if (c != lastC)
+
+            if (count > 1)
             {
-                if (Char.IsDigit((char)lastC) && lastC != '\\')
-                {
-                    outputLine += String.Format("{0}\\{1}", curCnt, lastC);
-                }
-                else
-                {
-                    outputLine += String.Format("{0}{1}", curCnt, lastC);
-                }
-                curCnt = 1;
-                lastC = c;
-                continue;
+                outputLine.Append(count);
+                outputLine.Append("\\");
             }
-            curCnt += 1;
-        }
 
-        if (Char.IsDigit((char)lastC) && lastC != '\\')
-        {
-            outputLine += String.Format("{0}\\{1}", curCnt, lastC);
+            if(currentChar != '\\')
+                outputLine.Append(currentChar);
+            i += count;
         }
-        else
-        {
-            outputLine += String.Format("{0}{1}", curCnt, lastC);
-        }
-
-        return outputLine;
+        return outputLine.Length <= inputLine.Length ? outputLine.ToString() : inputLine;
     }
 
     /// <summary>
@@ -62,9 +48,76 @@ public static class Archiver
     /// Пример: "2ab3c"   → "aabccc"
     /// Важно: при экранирова
     /// </summary>
-    public static string DecompressString(string compressed)
+    public static string DecompressString(string compressed) // 2\2
     {
-        throw new NotImplementedException("implement me");
+        StringBuilder outputLine = new();
+        if(!compressed.Contains('\\'))
+            return compressed;
+        int i = 0;
+        while (i < compressed.Length)
+        {
+            int count = 0;
+            int indNum = i;
+
+            while (i < compressed.Length && char.IsDigit(compressed[i]))
+            {
+                count = count * 10 + (compressed[i] - '0');
+                i += 1;
+            }
+            
+            bool hasDigit = i > indNum;
+            if(!hasDigit)
+                count = 1;
+            if (i >= compressed.Length)
+                break;
+            
+            char currentChar = compressed[i];
+            if (currentChar == '\\')
+            {
+                // 4\
+                var countLess = 0;
+                var ind = 0;
+                while (char.IsDigit(compressed[ind]) && compressed.Length == i + 1 )
+                {
+                    countLess = countLess * 10 + (compressed[ind] - '0');
+                    ind++;
+                }
+                if (countLess > 0)
+                {
+                    WriteRun(outputLine, currentChar, countLess);
+                    break;
+                }
+                i++; //2
+                if (i < compressed.Length)
+                {
+                    currentChar = compressed[i];
+                    for (int j = 0; j < count; j++)
+                    {
+                        outputLine.Append(currentChar);
+                    }
+
+                    i++;
+                }
+            }
+            else
+            {
+                if (hasDigit)
+                {
+                    for (int j = 0; j < count; j++)
+                    {
+                        outputLine.Append(currentChar);
+                    }
+                    i++;
+                }
+                else
+                {
+                    outputLine.Append(currentChar);
+                    i++;
+                }
+            }
+        }
+        
+        return outputLine.ToString() == string.Empty ? compressed : outputLine.ToString();
     }
 
     /// <summary>
@@ -74,7 +127,14 @@ public static class Archiver
     /// </summary>
     public static void WriteRun(StringBuilder output, char symbol, int count)
     {
-        throw new NotImplementedException("implement me");
+        for (int i = 0; i < count; i++)
+        {
+            output.Append(symbol);
+        }
     }
-    
+
+    private static bool IsCharDigitAndEsсaping(char symbol)
+    {
+        return char.IsDigit(symbol) && symbol != '\\';
+    }
 }
